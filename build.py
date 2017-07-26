@@ -21,7 +21,7 @@ class Course:
     def __init__(self, tr):
         td = tr.find_all('td')
         self.number = td[0].text
-        self.url = td[0].a['href']
+        self.url = td[0].a['href'] # TODO follow link and store description
         self.title = td[1].text
         self.instructors = self.parse_instructors(td[2].find('instructors'))
         self.time = td[3].a['href']
@@ -40,11 +40,12 @@ class Section:
     def __str__(self):
         return "" # TODO
 
-test1 = "https://www.cs.purdue.edu/academic-programs/courses/2008_fall_courses.html"
-time_test1 = "https://selfservice.mypurdue.purdue.edu/prod/bzwsrch.p_search_schedule?term=200910&subject=CS&cnbr=25100&schd_type=LEC"
 
-y = Year(test1)
+if __name__ == '__main__':
+    section_test1 = "https://selfservice.mypurdue.purdue.edu/prod/bzwsrch.p_search_schedule?term=200910&subject=CS&cnbr=18000&schd_type=LEC"
 
-print(y)
+    y = Year(test1)
+
+    print(y)
 
 
