@@ -2,6 +2,11 @@
 
 import requests
 from bs4 import BeautifulSoup
+from fake_useragent import UserAgent
+
+HEADERS = {'User-Agent': UserAgent().random}
+
+SOUPPARSER = "html5lib"
 
 class Year:
     def __init__(self, url):
@@ -9,8 +14,8 @@ class Year:
         self.course_list = self.get_courses(url)
 
     def get_courses(self, url):
-        response = requests.get(url)
-        soup = BeautifulSoup(response.text, "html5lib")
+        response = requests.get(url, headers=HEADERS)
+        soup = BeautifulSoup(response.text, SOUPPARSER)
         tables = soup.find_all('table', class_='table-striped')
         return list(map(lambda tr: Course(tr), tables[0].find_all('tr')[1:])) + list(map(lambda tr: Course(tr), tables[1].find_all('tr')[1:])) 
 
@@ -26,26 +31,46 @@ class Course:
         self.instructors = self.parse_instructors(td[2].find('instructors'))
         self.time = td[3].a['href']
 
+    def get_sections(self):
+        response = requests.get(self.time, headers=HEADERS)
+        soup = BeautifulSoup(response.text, SOUPPARSER)
+        table = soup.find_all('table', class_='datadisplaytable')[0]
+        headers = table.find_all('th', class_='ddlabel')
+        bodies = soup.select('div.pagebodydiv > table.datadisplaytable > tbody > tr > td.dddefault') # Selectors are the bomb
+        sections = []
+        for i in range(len(headers)):
+            sections.append(Section(headers[i], bodies[i]))
+        return sections
+
     @staticmethod
     def parse_instructors(instructors):
+        # TODO actually parse list later if needed
         return instructors
 
     def __str__(self):
         return "{}\t{}".format(self.number, self.title)
 
 class Section:
-    def __init__(self):
-        pass # TODO
+    def __init__(self, header, body):
+        header_split = header.text.split(' - ')
+        self.title = header_split[0]
+        self.crn = header_split[1]
+        self.number = header_split[1]
+        # TODO
 
     def __str__(self):
         return "" # TODO
 
 
+class DetailedClass:
+    # example: https://selfservice.mypurdue.purdue.edu/prod/bwckschd.p_disp_detail_sched?term_in=200910&crn_in=34295
+    def __init__(self, url):
+        pass # TODO
+
+    def __str__(self):
+        return "" #TODO
+
 if __name__ == '__main__':
-    section_test1 = "https://selfservice.mypurdue.purdue.edu/prod/bzwsrch.p_search_schedule?term=200910&subject=CS&cnbr=18000&schd_type=LEC"
-
-    y = Year(test1)
-
-    print(y)
-
-
+    year = Year("https://www.cs.purdue.edu/academic-programs/courses/2008_fall_courses.html")
+    course = list(filter(lambda course: course.number == "CS 18000", year.course_list))[0]
+    sections = course.get_sections()
