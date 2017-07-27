@@ -3,6 +3,7 @@
 import requests
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
+from collections import OrderedDict
 
 HEADERS = {'User-Agent': UserAgent().random}
 
@@ -17,7 +18,8 @@ class Year:
         response = requests.get(url, headers=HEADERS)
         soup = BeautifulSoup(response.text, SOUPPARSER)
         tables = soup.find_all('table', class_='table-striped')
-        return list(map(lambda tr: Course(tr), tables[0].find_all('tr')[1:])) + list(map(lambda tr: Course(tr), tables[1].find_all('tr')[1:])) 
+        return list(map(lambda tr: Course(tr), tables[0].find_all('tr')[1:])) + \
+                list(map(lambda tr: Course(tr), tables[1].find_all('tr')[1:])) 
 
     def __str__(self):
         return "\n".join(map(str, self.course_list))
@@ -50,16 +52,29 @@ class Course:
     def __str__(self):
         return "{}\t{}".format(self.number, self.title)
 
+sections = {}
 class Section:
     def __init__(self, header, body):
+        global sections
         header_split = header.text.split(' - ')
         self.title = header_split[0]
         self.crn = header_split[1]
-        self.number = header_split[1]
-        # TODO
+        self.number = header_split[2]
+        self.link = "https://selfservice.mypurdue.purdue.edu/" + header.find('a')['href']
+        meeting_times = body.find_all('td')
+        # TODO term?
+        self.type = meeting_times[0].text
+        self.time = meeting_times[1].text
+        self.days = meeting_times[2].text
+        self.where = meeting_times[3].text
+        self.date_range = meeting_times[4].text
+        self.lecture_type = meeting_times[5].text
+        self.instructors = meeting_times[6].text
+        if self.crn not in sections:
+            sections[self.crn] = self
 
     def __str__(self):
-        return "" # TODO
+        return "{} {} {}".format(self.crn, self.number, self.title) # TODO add term
 
 
 class DetailedClass:
@@ -73,4 +88,8 @@ class DetailedClass:
 if __name__ == '__main__':
     year = Year("https://www.cs.purdue.edu/academic-programs/courses/2008_fall_courses.html")
     course = list(filter(lambda course: course.number == "CS 18000", year.course_list))[0]
-    sections = course.get_sections()
+    sects = course.get_sections()
+
+    print(type(sections))
+    for k in sections:
+        print(sections[k])
