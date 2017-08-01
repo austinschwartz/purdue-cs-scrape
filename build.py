@@ -8,6 +8,7 @@ from collections import OrderedDict
 HEADERS = {'User-Agent': UserAgent().random}
 
 SOUPPARSER = "html5lib"
+SECTIONS = {}
 
 class Year:
     def __init__(self, url):
@@ -34,7 +35,11 @@ class Course:
         self.time = td[3].a['href']
 
     def get_sections(self):
-        response = requests.get(self.time, headers=HEADERS)
+        return Course.get_sections(self, self.time)
+
+    @staticmethod
+    def get_sections(time_url):
+        response = requests.get(time_url, headers=HEADERS)
         soup = BeautifulSoup(response.text, SOUPPARSER)
         table = soup.find_all('table', class_='datadisplaytable')[0]
         headers = table.find_all('th', class_='ddlabel')
@@ -52,7 +57,6 @@ class Course:
     def __str__(self):
         return "{}\t{}".format(self.number, self.title)
 
-sections = {}
 class Section:
     def __init__(self, header, body):
         global sections
@@ -70,11 +74,11 @@ class Section:
         self.date_range = meeting_times[4].text
         self.lecture_type = meeting_times[5].text
         self.instructors = meeting_times[6].text
-        if self.crn not in sections:
-            sections[self.crn] = self
+        if self.crn not in SECTIONS:
+            SECTIONS[self.crn] = self
 
     def __str__(self):
-        return "{} {} {}".format(self.crn, self.number, self.title) # TODO add term
+        return "{} {} {} {} {}".format(self.crn, self.number, self.title, self.where, self.time) # TODO add term
 
 
 class DetailedClass:
@@ -86,10 +90,9 @@ class DetailedClass:
         return "" #TODO
 
 if __name__ == '__main__':
-    year = Year("https://www.cs.purdue.edu/academic-programs/courses/2008_fall_courses.html")
-    course = list(filter(lambda course: course.number == "CS 18000", year.course_list))[0]
-    sects = course.get_sections()
+    url = "https://selfservice.mypurdue.purdue.edu/prod/bzwsrch.p_search_schedule?subject=CS"
+    Course.get_sections(url)
 
-    print(type(sections))
-    for k in sections:
-        print(sections[k])
+    for k in SECTIONS:
+        if SECTIONS[k].where != "TBA":
+            print(SECTIONS[k])
