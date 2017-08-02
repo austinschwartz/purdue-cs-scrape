@@ -47,6 +47,8 @@ class Course:
         sections = []
         for i in range(len(headers)):
             sections.append(Section(headers[i], bodies[i]))
+        if len(sections) == 0:
+            print("no sections, oops")
         return sections
 
     @staticmethod
@@ -66,7 +68,7 @@ class Section:
         self.number = header_split[2]
         self.link = "https://selfservice.mypurdue.purdue.edu/" + header.find('a')['href']
         meeting_times = body.find_all('td')
-        # TODO term?
+        self.term = body.find("span").next_sibling.strip()
         self.type = meeting_times[0].text
         self.time = meeting_times[1].text
         self.days = meeting_times[2].text
@@ -76,22 +78,20 @@ class Section:
         self.instructors = meeting_times[6].text
         if self.crn not in SECTIONS:
             SECTIONS[self.crn] = self
-
+        
     def __str__(self):
-        return "{} {} {} {} {}".format(self.crn, self.number, self.title, self.where, self.time) # TODO add term
+        return "{}\t{} - {} {} {} {}".format(self.term, self.crn, self.number, self.title, self.where, self.time)
 
-
-class DetailedClass:
-    # example: https://selfservice.mypurdue.purdue.edu/prod/bwckschd.p_disp_detail_sched?term_in=200910&crn_in=34295
-    def __init__(self, url):
-        pass # TODO
-
-    def __str__(self):
-        return "" #TODO
+def convert_term(year, semester):
+    if semester == "fall":
+        return str(int(year) + 1) + "10"
+    else:
+        return str(year) + "20"
 
 if __name__ == '__main__':
     url = "https://selfservice.mypurdue.purdue.edu/prod/bzwsrch.p_search_schedule?subject=CS"
-    Course.get_sections(url)
+    term = convert_term(2013, "spring")
+    Course.get_sections(url + "&term=" + term)
 
     for k in SECTIONS:
         if SECTIONS[k].where != "TBA":
