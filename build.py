@@ -1,9 +1,11 @@
 #!/bin/env python3
 
 import requests
+import sys
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from collections import OrderedDict
+from db import DB
 
 HEADERS = {'User-Agent': UserAgent().random}
 
@@ -74,11 +76,11 @@ class Section:
         self.days = meeting_times[2].text
         self.where = meeting_times[3].text
         self.date_range = meeting_times[4].text
-        self.lecture_type = meeting_times[5].text
+        self.schedule_type = meeting_times[5].text
         self.instructors = meeting_times[6].text
         if self.crn not in SECTIONS:
             SECTIONS[self.crn] = self
-        
+
     def __str__(self):
         return "{}\t{} - {} {} {} {}".format(self.term, self.crn, self.number, self.title, self.where, self.time)
 
@@ -89,10 +91,21 @@ def convert_term(year, semester):
         return str(year) + "20"
 
 if __name__ == '__main__':
-    url = "https://selfservice.mypurdue.purdue.edu/prod/bzwsrch.p_search_schedule?subject=CS"
-    term = convert_term(2013, "spring")
-    Course.get_sections(url + "&term=" + term)
+    if len(sys.argv) < 3:
+        print("args should be user followed by pass")
+        sys.exit(1)
+    user = sys.argv[1]
+    password = sys.argv[2]
+    db = DB(user, password)
+    url = "https://selfservice.mypurdue.purdue.edu/prod/bzwsrch.p_search_schedule?term=201810&subject=CS&cnbr=24000"
+    #term = convert_term(2013, "spring")
+    #Course.get_sections(url + "&term=" + term)
+    Course.get_sections(url)
 
     for k in SECTIONS:
         if SECTIONS[k].where != "TBA":
-            print(SECTIONS[k])
+            db.insert(SECTIONS[k])
+
+    db.print_rows()
+
+
