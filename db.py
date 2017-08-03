@@ -13,16 +13,16 @@ class DB:
             cursor.execute("""
             CREATE TABLE sections (
                 crn         char(5) CONSTRAINT firstkey PRIMARY KEY,
-                title       varchar(64) NOT NULL,
-                number      varchar(64) NOT NULL,
+                title       varchar(128) NOT NULL,
+                number      varchar(128) NOT NULL,
                 term        varchar(32) NOT NULL,
                 type        varchar(32) NOT NULL,
-                time        varchar(64) NOT NULL,
+                time        varchar(128) NOT NULL,
                 days        varchar(16) NOT NULL,
                 location    varchar(128) NOT NULL,
-                date_range  varchar(64) NOT NULL,
-                schedule_type varchar(64) NOT NULL,
-                instructors  varchar(64) NOT NULL
+                date_range  varchar(128) NOT NULL,
+                schedule_type varchar(128) NOT NULL,
+                instructors  varchar(256) NOT NULL
             );
             """)
             self.conn.commit()
