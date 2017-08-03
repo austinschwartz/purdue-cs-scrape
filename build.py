@@ -37,10 +37,10 @@ class Course:
         self.time = td[3].a['href']
 
     def get_sections(self):
-        return Course.get_sections(self, self.time)
+        return Course.get_sections(self, "..", self.time)
 
     @staticmethod
-    def get_sections(time_url):
+    def get_sections(term, time_url):
         response = requests.get(time_url, headers=HEADERS)
         soup = BeautifulSoup(response.text, SOUPPARSER)
         table = soup.find_all('table', class_='datadisplaytable')[0]
@@ -50,7 +50,7 @@ class Course:
         for i in range(len(headers)):
             sections.append(Section(headers[i], bodies[i]))
         if len(sections) == 0:
-            print("no sections, oops")
+            print(term + ": no sections, oops")
         return sections
 
     @staticmethod
@@ -97,14 +97,17 @@ if __name__ == '__main__':
     user = sys.argv[1]
     password = sys.argv[2]
     db = DB(user, password)
-    url = "https://selfservice.mypurdue.purdue.edu/prod/bzwsrch.p_search_schedule?term=201810&subject=CS&cnbr=24000"
-    #term = convert_term(2013, "spring")
-    #Course.get_sections(url + "&term=" + term)
-    Course.get_sections(url)
+    #db.create()
 
-    for k in SECTIONS:
-        if SECTIONS[k].where != "TBA":
-            db.insert(SECTIONS[k])
+    #url = "https://selfservice.mypurdue.purdue.edu/prod/bzwsrch.p_search_schedule?subject=CS"
+    
+    #for semester in ["spring", "fall"]:
+        #for year in range(2008, 2018):
+            #Course.get_sections(convert_term(year, semester), url + "&term=" + convert_term(year, semester))
+
+    #for k in SECTIONS:
+        #if SECTIONS[k].where != "TBA":
+            #db.insert(SECTIONS[k])
 
     db.print_rows()
 
