@@ -12,7 +12,7 @@ class DB:
             cursor.execute("""DROP TABLE IF EXISTS sections""")
             cursor.execute("""
             CREATE TABLE sections (
-                crn         char(5) CONSTRAINT firstkey PRIMARY KEY,
+                crn         char(5) NOT NULL,
                 title       varchar(128) NOT NULL,
                 number      varchar(128) NOT NULL,
                 term        varchar(32) NOT NULL,
@@ -22,7 +22,8 @@ class DB:
                 location    varchar(128) NOT NULL,
                 date_range  varchar(128) NOT NULL,
                 schedule_type varchar(128) NOT NULL,
-                instructors  varchar(256) NOT NULL
+                instructors  varchar(256) NOT NULL,
+                PRIMARY KEY(term, crn)
             );
             """)
             self.conn.commit()
@@ -31,7 +32,7 @@ class DB:
 
     def insert(self, section):
         cursor = self.conn.cursor()
-        cursor.execute("INSERT INTO sections (crn, title, number, term, type, time, days, location, date_range, schedule_type, instructors) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) on conflict (crn) do nothing;", (section.crn, section.title, section.number, section.term, section.type, section.time, section.days, section.where, section.date_range, section.schedule_type, section.instructors))
+        cursor.execute("INSERT INTO sections (crn, title, number, term, type, time, days, location, date_range, schedule_type, instructors) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) on conflict (term, crn) do nothing;", (section.crn, section.title, section.number, section.term, section.type, section.time, section.days, section.where, section.date_range, section.schedule_type, section.instructors))
         self.conn.commit()
 
     def print_rows(self):
