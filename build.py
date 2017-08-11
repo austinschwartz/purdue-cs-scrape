@@ -7,7 +7,8 @@ from fake_useragent import UserAgent
 from collections import OrderedDict
 from db import DB
 
-HEADERS = {'User-Agent': UserAgent().random}
+def HEADERS():
+    return {'User-Agent': UserAgent().random}
 
 SOUPPARSER = "html5lib"
 SECTIONS = {}
@@ -18,7 +19,7 @@ class Year:
         self.course_list = self.get_courses(url)
 
     def get_courses(self, url):
-        response = requests.get(url, headers=HEADERS)
+        response = requests.get(url, headers=HEADERS())
         soup = BeautifulSoup(response.text, SOUPPARSER)
         tables = soup.find_all('table', class_='table-striped')
         return list(map(lambda tr: Course(tr), tables[0].find_all('tr')[1:])) + \
@@ -41,7 +42,7 @@ class Course:
 
     @staticmethod
     def get_sections(time_url, term = "N/A"):
-        response = requests.get(time_url, headers=HEADERS)
+        response = requests.get(time_url, headers=HEADERS())
         soup = BeautifulSoup(response.text, SOUPPARSER)
         table = soup.find_all('table', class_='datadisplaytable')[0]
         headers = table.find_all('th', class_='ddlabel')
@@ -84,6 +85,61 @@ class Section:
     def __str__(self):
         return "{}\t{} - {} {} {} {}".format(self.term, self.crn, self.number, self.title, self.where, self.time)
 
+class Detailed:
+    # https://selfservice.mypurdue.purdue.edu/prod/bwckschd.p_disp_detail_sched?term_in=201810&crn_in=14352
+    def __init__(self, url):
+        response = requests.get(url, headers=HEADERS())
+        soup = BeautifulSoup(response.text, SOUPPARSER)
+        error = soup.find('span', class_='errortext')
+        if error and error.text=='No detailed class information found':
+            return
+        print("crn exists")
+        table = soup.find_all('table', class_='datadisplaytable')[0]
+        header = table('th', class_='ddlabel')
+        bodies = soup.select('div.pagebodydiv > table.datadisplaytable > tbody > tr > td.dddefault') # Selectors are the bomb
+        sp = header[0].text.split(' - ')
+        self.title = sp[0]
+        self.crn = sp[1]
+        self.number = sp[2]
+
+        tr = bodies[0].find('table', class_='datadisplaytable').find_all('tr')[1].find_all('td')
+        print(tr[0].text)
+
+class CRN:
+    def __init__(self, term, crn):
+        url = "https://selfservice.mypurdue.purdue.edu/prod/bwckschd.p_disp_detail_sched?term_in=" + term + "&crn_in=" + str(crn)
+        response = requests.get(url, headers=HEADERS())
+        soup = BeautifulSoup(response.text, SOUPPARSER)
+        tables = soup.find_all('table', class_='datadisplaytable')
+        if len(tables) > 0:
+            table = tables[0]
+            self.broke = False
+        else:
+            self.broke = True
+            return
+        headers = table.find_all('th', class_='ddlabel')
+        header = headers[0].text
+        sp = header.split(' - ')
+        self.title = sp[0]
+        self.crn = sp[1]
+        self.number = sp[2]
+        self.section = sp[3]
+        bodies = soup.find_all('td', class_='dddefault')
+        self.term = bodies[0].text.split('\n')[1].split(': ')[1].rstrip()
+        self.seats_capacity  = bodies[1].text
+        self.seats_actual    = bodies[2].text
+        self.seats_remaining = bodies[3].text
+        self.waitlist_capacity  = bodies[4].text
+        self.waitlist_actual    = bodies[5].text
+        self.waitlist_remaining = bodies[6].text
+
+    def __str__(self):
+        if not self.broke:
+            return "{}\t{} - {} {} {} {}".format(self.term, self.crn, self.number, self.title, self.seats_capacity, self.seats_actual)
+        else:
+            return "no section"
+ 
+    
 def convert_term(year, semester):
     if semester == "fall":
         return str(int(year) + 1) + "10"
@@ -97,20 +153,30 @@ if __name__ == '__main__':
     user = sys.argv[1]
     password = sys.argv[2]
     db = DB(user, password)
+    
+    #Detailed("https://selfservice.mypurdue.purdue.edu/prod/bwckschd.p_disp_detail_sched?term_in=201810&crn_in=14352")
+
+    for semester in ["spring", "fall"]:
+        for year in range(2008, 2019):
+            term = convert_term(year, semester)
+            crn = CRN(term, "10715")
+            print(crn)
+
     #db.create()
 
     #url = "https://selfservice.mypurdue.purdue.edu/prod/bzwsrch.p_search_schedule?subject=CS"
-    courses = Course.get_sections("https://selfservice.mypurdue.purdue.edu/prod/bzwsrch.p_search_schedule?term=201810&subject=CS&cnbr=18000")
+    #url = "https://selfservice.mypurdue.purdue.edu/prod/bzwsrch.p_search_schedule?subject=CS&cnbr=15900"
+    #courses = Course.get_sections(url)
     #print(courses)
 
     #for semester in ["spring", "fall"]:
-        #for year in range(2008, 2018):
+        #for year in range(2008, 2019):
             #term = convert_term(year, semester)
-            #Course.get_sections(url + "&term=" + term + "&schd_type=LAB&cnbr=18000", term = term)
+            #Course.get_sections(url + "&term=" + term, term=term)
 
-    for k in SECTIONS:
-        if SECTIONS[k].where != "TBA":
-            db.insert(SECTIONS[k])
+    #for k in SECTIONS:
+        #if SECTIONS[k].where != "TBA":
+            #db.insert(SECTIONS[k])
 
     #db.print_rows()
 
