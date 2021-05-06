@@ -15,7 +15,7 @@ entrypoints==0.2.2
 enum34==1.1.6
 fake-useragent==0.1.7
 Flask==0.12
-Flask-Cors==3.0.2
+Flask-Cors==3.0.9
 future==0.16.0
 greenlet==0.4.10
 html5lib==0.9999999
