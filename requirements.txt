@@ -26,7 +26,7 @@ ipython-genutils==0.1.0
 ipywidgets==6.0.0
 itsdangerous==0.24
 Jinja2==2.9.5
-joblib==0.11
+joblib==1.2.0
 jsonpatch==1.10
 jsonpointer==1.9
 jsonschema==2.6.0
